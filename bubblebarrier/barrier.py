@@ -28,8 +28,8 @@ class Barrier:
         self.M_Jz = cosmo.M_J(self.z)
         self.powspec = ps.MassFunctions(A2byA1=A2byA1,kMpc_trans=kMpc_trans,alpha=alpha,beta=beta)
         self.deltaR_interp = np.concatenate((np.linspace(-0.999,2,1000), np.linspace(2.001,25,1000)))
-        self.ratio = self.Modify_Ratio()  # Ratio for partial ionization
-        self.mhratio = self.Nxi_Ratio()
+        self.Nion_normal_ratio = self.Nion_ST()*self.fesc*self.qion
+        self.Nxi_normal_ratio = self.Nxi_ST()*self.xi
 
     def Nion_Pure(self,Mv,deltaR):
         def Nion_Pure_diff(m,Mv,deltaR):
@@ -74,12 +74,30 @@ class Barrier:
         self.Nxi_interp_Mv = interp1d(self.deltaR_interp, Nxi_arr, kind='cubic')
         return self.Nxi_interp_Mv(deltaR) * self.xi 
 
+    def Nxi_normalized(self,Mv:float,deltaR:np.ndarray) -> np.ndarray:
+        """
+        return the ST normalized N_xi
+        """
+        nxi = self.N_xi_interp(Mv, deltaR)
+        nxi_mean = np.mean(nxi) 
+        ratio = self.Nxi_normal_ratio/nxi_mean
+        return ratio*nxi
+    
+    def Nion_normalized(self,Mv:float,deltaR:np.ndarray) -> np.ndarray:
+        """
+        return the ST normalized N_ion
+        """
+        nion = self.Nion_interp(Mv, deltaR)
+        nion_mean = np.mean(nion) 
+        ratio = self.Nion_normal_ratio/nion_mean
+        return ratio*nion
+
     #patch
     def Nion_ST(self):
         def Nion_ST_diff(m):
             fstar = cosmo.fstar(m)
             return (1 / m_H * fstar * omega_b / omega_m * m * self.powspec.dndmst(m, self.z))
-        mslice = np.logspace(np.log10(self.M_min), np.log10(cosmo.M_vir(0.61,1e8,self.z)), 100)
+        mslice = np.logspace(np.log10(self.M_min), np.log10(cosmo.M_vir(0.61,1e10,self.z)), 100)
         ans = 0
         for i in range(len(mslice)-1):
             ans += quad(Nion_ST_diff, mslice[i], mslice[i+1], epsrel=1e-7)[0]
@@ -172,7 +190,7 @@ class Barrier:
         return result.root
 
 
-def load_binary_data(filename, dtype=np.float32):
+def load_binary_data(filename, dtype=np.float32) -> np.ndarray:
         '''Load binary data from the density field
             created by 21cmFast
         '''
