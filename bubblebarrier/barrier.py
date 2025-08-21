@@ -148,7 +148,9 @@ class Barrier:
             ratio = self.Nxi_ST() / self.Nxi_PS()
             np.save(f'.ratio_init/nxi_ratio_at_z{self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', ratio)
         return ratio
-
+    
+    def N_H(self,deltaR):
+        return 1/m_H * omega_b/omega_m * rhom *(1+deltaR) 
 
     def delta_L(self, deltar):
         return (1.68647 - 1.35 / (1 + deltar) ** (2 / 3) - 1.12431 / (1 + deltar) ** (1 / 2) + 0.78785 / (1 + deltar) ** (0.58661)) / cosmo.Dz(self.z)
