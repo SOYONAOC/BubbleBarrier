@@ -3,7 +3,6 @@ import camb
 import os
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
-import astropy.units as u
 from scipy.integrate import quad,quad_vec
 from astropy.constants import G
 import massfunc as mf
