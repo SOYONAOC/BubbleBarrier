@@ -110,8 +110,8 @@ class MassFunctions:
         self.dsigma2_dm_interpolation_completed = False
         self.pk_interpolation_completed = False
         self.sigma2_interpolation_completed = False
-        self.m_interp_range = np.logspace(0.0,18.0,1000)
-        self.ps_interp_range = np.logspace(-4.0,8.0,5000)
+        self.m_interp_range = np.logspace(0.0,18.0,5000)
+        self.ps_interp_range = np.logspace(-4.0,8.0,50000)
         self.cosmo = mf.SFRD()
 
     def PowerSpectrum_Interp_Set(self):
@@ -128,7 +128,7 @@ class MassFunctions:
                     Pk = self.spc.MatterPower(self.ps_interp_range, z=0.0)
                     np.save(filename, Pk)
                 Pk_arr = np.load(filename)
-        self.pk0_interpolation = interp1d(np.log10(self.ps_interp_range), np.log10(Pk_arr), kind='linear')
+        self.pk0_interpolation = interp1d(np.log10(self.ps_interp_range), np.log10(Pk_arr), kind='cubic')
         self.pk_interpolation_completed = True
 
     def Sigma2_Interp_Set(self):
@@ -155,7 +155,7 @@ class MassFunctions:
             os.makedirs('.ps_init_out', exist_ok=True)
             with FileLock(lockfile):
                 if not os.path.exists(filename):
-                    dsig2dm = self.dsigma2_dm(self.m_interp_range)
+                    dsig2dm = np.log10(-self.dsigma2_dm(self.m_interp_range))
                     np.save(filename, dsig2dm)
                 dsig2dm_arr = np.load(filename)
         self.dsigma2_dm_interpolation = interp1d(np.log10(self.m_interp_range), dsig2dm_arr, kind='cubic')
@@ -180,7 +180,7 @@ class MassFunctions:
             self.Dsigma2dm_Interp_Set()
         # if M < self.m_interp_range[0] or M > self.m_interp_range[-1]:
         #     return self.dsigma2_dm(M)
-        return self.dsigma2_dm_interpolation(np.log10(M))
+        return -10 ** self.dsigma2_dm_interpolation(np.log10(M))
 
     def dsigma2_dk(self,M,k):
         r=(3.0*M/(4.0*np.pi*rhom))**(1./3.) 
