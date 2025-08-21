@@ -7,6 +7,7 @@ from scipy.integrate import quad,quad_vec
 from astropy.constants import G
 import massfunc as mf
 from filelock import FileLock
+from joblib import Parallel,delayed
 
 
 h=0.674
@@ -113,6 +114,42 @@ class MassFunctions:
         self.m_interp_range = np.logspace(0.0,18.0,5000)
         self.ps_interp_range = np.logspace(-4.0,8.0,50000)
         self.cosmo = mf.SFRD()
+
+    def Sigma2_Interp_Set_Parallel(self):
+        filename = f'.ps_init_out/Sigma2_interp_A{self.A2byA1}_K{self.kMpc_trans}_Alpha{self.alpha}_Beta{self.beta}.npy'
+        lockfile = filename + '.lock'
+        try:
+            sig_arr = np.load(filename)
+        except FileNotFoundError:
+            os.makedirs('.ps_init_out', exist_ok=True)
+            with FileLock(lockfile):
+                if not os.path.exists(filename):
+                    sig = Parallel(n_jobs=-1)(delayed(self.sigma2)(m) for m in self.m_interp_range)
+                    np.save(filename, sig)
+                sig_arr = np.load(filename)
+        self.sigma2m_interpolation = interp1d(np.log10(self.m_interp_range), np.log10(sig_arr), kind='cubic')
+        self.sigma2_interpolation_completed = True
+
+    def Dsigma2dm_Interp_Set_Parallel(self):
+        filename = f'.ps_init_out/Dsigma2_dm_interp_A{self.A2byA1}_K{self.kMpc_trans}_Alpha{self.alpha}_Beta{self.beta}.npy'
+        lockfile = filename + '.lock'
+        try:
+            dsig2dm_arr = np.load(filename)
+        except FileNotFoundError:
+            os.makedirs('.ps_init_out', exist_ok=True)
+            with FileLock(lockfile):
+                if not os.path.exists(filename):
+                    dsig2dm = Parallel(n_jobs=-1)(delayed(lambda m: np.log10(-self.dsigma2_dm(m)))(m) for m in self.m_interp_range)
+                    np.save(filename, dsig2dm)
+                dsig2dm_arr = np.load(filename)
+        self.dsigma2_dm_interpolation = interp1d(np.log10(self.m_interp_range), dsig2dm_arr, kind='cubic')
+        self.dsigma2_dm_interpolation_completed = True
+
+
+    def initialize_interp(self):
+        self.PowerSpectrum_Interp_Set()
+        self.Sigma2_Interp_Set_Parallel()
+        self.Dsigma2dm_Interp_Set_Parallel()
 
     def PowerSpectrum_Interp_Set(self):
         filename = f'.ps_init_out/Pk_interp_A{self.A2byA1}_K{self.kMpc_trans}_Alpha{self.alpha}_Beta{self.beta}.npy'
