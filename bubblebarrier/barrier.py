@@ -59,8 +59,8 @@ class Barrier:
             nion_pure = self.Nion_Pure(Mv, self.deltaR_interp)
             np.save(f'.Nion_Interp_init/NionAtz{self.z:.2f}/Nion_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', nion_pure)
             Nion_arr = np.load(f'.Nion_Interp_init/NionAtz{self.z:.2f}/Nion_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
-        self.Nion_interp_Mv = interp1d(self.deltaR_interp, Nion_arr, kind='cubic')
-        return self.Nion_interp_Mv(deltaR) * self.fesc * self.qion 
+        Nion_interp_Mv = interp1d(self.deltaR_interp, Nion_arr, kind='cubic')
+        return Nion_interp_Mv(deltaR) * self.fesc * self.qion 
 
     # Interpolation for N_xi
     def N_xi_interp(self, Mv, deltaR):
@@ -71,8 +71,8 @@ class Barrier:
             nxi_pure = self.Nxi_Pure(Mv, self.deltaR_interp)
             np.save(f'.Nxi_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', nxi_pure)
             Nxi_arr = np.load(f'.Nxi_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
-        self.Nxi_interp_Mv = interp1d(self.deltaR_interp, Nxi_arr, kind='cubic')
-        return self.Nxi_interp_Mv(deltaR) * self.xi 
+        Nxi_interp_Mv = interp1d(self.deltaR_interp, Nxi_arr, kind='cubic')
+        return Nxi_interp_Mv(deltaR) * self.xi
 
     def Nxi_normalized(self,Mv:float,deltaR:np.ndarray) -> np.ndarray:
         """
