@@ -101,7 +101,7 @@ class Barrier:
     def Nion_ST(self):
         def Nion_ST_diff(m):
             fstar = cosmo.fstar(m)
-            return (self.Xim(m,self.z)*1 / m_H * fstar * omega_b / omega_m * m * self.powspec.dndmst(m, self.z))
+            return (1 / m_H * fstar * omega_b / omega_m * m * self.powspec.dndmst(m, self.z))
         mslice = np.logspace(np.log10(self.M_min), np.log10(cosmo.M_vir(0.61,1e10,self.z)), 100)
         ans = 0
         for i in range(len(mslice)-1):
@@ -120,7 +120,7 @@ class Barrier:
 
     def Nxi_ST(self):
         def Nxi_ST_diff(m):
-            return (1 / m_H * omega_b / omega_m * m * self.powspec.dndmst(m, self.z))
+            return (self.Xim(m,self.z)*1 / m_H * omega_b / omega_m * m * self.powspec.dndmst(m, self.z))
         mslice = np.logspace(np.log10(self.M_Jz), np.log10(self.M_min), 100)
         ans = 0
         for i in range(len(mslice)-1):
