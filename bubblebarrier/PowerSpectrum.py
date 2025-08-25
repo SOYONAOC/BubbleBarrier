@@ -124,7 +124,6 @@ class MassFunctions:
         except FileNotFoundError:
             os.makedirs('.ps_init_out', exist_ok=True)
             with FileLock(lockfile):
-                # 再次检查文件是否已被其他进程创建
                 if not os.path.exists(filename):
                     self.spc.Prepare_MatterPower(H0=67.4, ombh2=0.022, omch2=0.12, kMpc_max=self.ps_interp_range[-1])
                     Pk = self.spc.MatterPower(self.ps_interp_range, z=0.0)
@@ -247,6 +246,8 @@ class MassFunctions:
         sig1 = self.sigma2_interp(M) - self.sigma2_interp(Mr)
         del1 = self.cosmo.deltac(z) - delta_L
         return rhom * (1 + deltar) / M / np.sqrt(2 * np.pi) * abs(self.dsigma2_dm_interp(M)) * del1 / sig1 ** (3 / 2) * np.exp(-del1 ** 2 / (2 * sig1))
+    
+
     
 
         # def func_fcoll(self,lnM,z):

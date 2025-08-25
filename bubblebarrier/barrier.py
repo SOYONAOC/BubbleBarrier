@@ -17,19 +17,18 @@ rhom = cosmo.rhom
 
 class Barrier:
 
-    def __init__(self,fesc=0.2, qion=10000.0,z_v=10.0,nrec=3,xi=10.0,A2byA1=0.1,kMpc_trans=200,alpha=2.0,beta=0.0):
+    def __init__(self,fesc=0.2, qion=10000.0,z_v=10.0,nrec=3,A2byA1=0.1,kMpc_trans=200,alpha=2.0,beta=0.0):
         self.A2byA1,self.kMpc_trans,self.alpha,self.beta = A2byA1,kMpc_trans,alpha,beta
         self.fesc = fesc
         self.qion = qion
         self.z = z_v
         self.nrec = nrec
-        self.xi = xi
         self.M_min = cosmo.M_vir(0.61,1e4,self.z)  # Minimum halo mass for ionization
         self.M_Jz = cosmo.M_J(self.z)
         self.powspec = ps.MassFunctions(A2byA1=A2byA1,kMpc_trans=kMpc_trans,alpha=alpha,beta=beta)
         self.deltaR_interp = np.concatenate((np.linspace(-0.999,2,1000), np.linspace(2.001,25,1000)))
         self.Nion_normal_ratio = self.Nion_ST()*self.fesc*self.qion
-        self.Nxi_normal_ratio = self.Nxi_ST()*self.xi
+        self.Nxi_normal_ratio = self.Nxi_ST()
 
     def Nion_Pure(self,Mv,deltaR):
         def Nion_Pure_diff(m,Mv,deltaR):
@@ -43,13 +42,19 @@ class Barrier:
     
     def Nxi_Pure(self,Mv,deltaR):
         def Nxi_Pure_diff(m,Mv,deltaR):
-            return m*self.dndmeps(m,Mv,deltaR,self.z)/ m_H * omega_b / omega_m
+            return self.Xim(m,self.z)*m*self.dndmeps(m,Mv,deltaR,self.z)/ m_H * omega_b / omega_m
         mslice = np.logspace(np.log10(self.M_Jz), np.log10(self.M_min), 12)
         ans = np.zeros_like(deltaR)
         for i in range(len(mslice)-1):
             ans += quad_vec(Nxi_Pure_diff, mslice[i], mslice[i+1],args=(Mv,deltaR), epsrel=1e-6)[0]
         return ans
-
+    
+    def Xim(self,m,z):
+        A,B,C,D,E,F,G = 4.4,0.334,0.023,0.199,-0.042,0,1
+        M7 = m/1e7
+        F0 = 1.0
+        return 1+A*M7**(B+C*np.log10(M7))*(F+G*(1+z)/10)* F0**(D+E*np.log10(F0))
+    
     # Interpolation for Nion
     def Nion_interp(self, Mv,deltaR):
         try:
@@ -72,7 +77,7 @@ class Barrier:
             np.save(f'.Nxi_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', nxi_pure)
             Nxi_arr = np.load(f'.Nxi_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
         Nxi_interp_Mv = interp1d(self.deltaR_interp, Nxi_arr, kind='cubic')
-        return Nxi_interp_Mv(deltaR) * self.xi
+        return Nxi_interp_Mv(deltaR) 
 
     def Nxi_normalized(self,Mv:float,deltaR:np.ndarray) -> np.ndarray:
         """
@@ -96,7 +101,7 @@ class Barrier:
     def Nion_ST(self):
         def Nion_ST_diff(m):
             fstar = cosmo.fstar(m)
-            return (1 / m_H * fstar * omega_b / omega_m * m * self.powspec.dndmst(m, self.z))
+            return (self.Xim(m,self.z)*1 / m_H * fstar * omega_b / omega_m * m * self.powspec.dndmst(m, self.z))
         mslice = np.logspace(np.log10(self.M_min), np.log10(cosmo.M_vir(0.61,1e10,self.z)), 100)
         ans = 0
         for i in range(len(mslice)-1):
