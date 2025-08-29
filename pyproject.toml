@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bubblebarrier"
-version = "1.1.10"
+version = "1.2.0"
 authors = [
     {name = "Hajime Hinata", email = "onmyojiflow@gmail.com"},
 ]
