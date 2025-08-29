@@ -247,11 +247,13 @@ class MassFunctions:
         del1 = self.cosmo.deltac(z) - delta_L
         return rhom * (1 + deltar) / M / np.sqrt(2 * np.pi) * abs(self.dsigma2_dm_interp(M)) * del1 / sig1 ** (3 / 2) * np.exp(-del1 ** 2 / (2 * sig1))
     
+    def M_Jeans(self, z):
+        return 5.73e3*(Omegam*h**2/0.15)**(-1/2) * (omegab*h**2/0.0224)**(-3/5) * ((1+z)/10)**(3/2)
 
-    
 
-        # def func_fcoll(self,lnM,z):
-        #     M=np.exp(lnM)
+
+    # def func_fcoll(self,lnM,z):
+    #     M=np.exp(lnM)
         #     return M*self.dndmst(M,z)*M
 
         # def fcoll(self,Mmin,Mmax,z):
@@ -276,13 +278,9 @@ class MassFunctions:
         a2=a1*(mu/0.6)**(-1.0)*((1.0+z)/10)**(-1.0)/1.98e4*Tvir
         return a2**(3.0/2.0)*1e8/h
 
-    @staticmethod
-    def M_Jeans(mu,T,z):
-        return 3.96e4*(T/mu)**(3./2.)*(Omegam*h**2)**(-1./2.)*(1+z)**(-3./2.)
-
-    def M_J(self, z):
-        return 5.73e3*(self.omegam*self.h**2/0.15)**(-1/2) * (self.omegab*self.h**2/0.0224)**(-3/5) * ((1+z)/10)**(3/2)
-
+    # @staticmethod
+    # def M_Jeans(mu,T,z):
+    #     return 3.96e4*(T/mu)**(3./2.)*(Omegam*h**2)**(-1./2.)*(1+z)**(-3./2.)
 
     def fstar(self,M):
         f0 = .14
