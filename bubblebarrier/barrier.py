@@ -29,6 +29,7 @@ class Barrier:
         self.deltaR_interp = np.concatenate((np.linspace(-0.999,2,1000), np.linspace(2.001,25,1000)))
         self.Nion_normal_ratio = self.Nion_ST()*self.fesc*self.qion
         self.M_J = self.powspec.M_Jeans(self.z)
+        self.delta_R = np.linspace(-0.95,2,100
         # self.Nxi_normal_ratio = self.Nxi_ST()
 
     def Nion_Pure(self,Mv,deltaR):
@@ -160,7 +161,7 @@ class Barrier:
             nxi_pure = np.array([self.Nxi_dz(dr,Mv,z) for dr in delta_R])
             np.save(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', nxi_pure)
             Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
-        Nxi_interp_Mv = interp1d(delta_R, Nxi_arr, kind='cubic')
+        Nxi_interp_Mv = interp1d(self.delta_R, Nxi_arr, kind='cubic')
         return Nxi_interp_Mv(deltaR)
 
     def dST_dz(self,m,z):
