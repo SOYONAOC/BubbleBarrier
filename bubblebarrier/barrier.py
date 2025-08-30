@@ -155,7 +155,7 @@ class Barrier:
             Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
         except FileNotFoundError:
             os.makedirs(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}', exist_ok=True)
-            delta_R = np.linspace(-0.999,2,100)
+            delta_R = np.linspace(-0.98,2,100)
             nxi_pure = np.array([self.Nxi_dz(dr,Mv,z) for dr in delta_R])
             np.save(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', nxi_pure)
             Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
