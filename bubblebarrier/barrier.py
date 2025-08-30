@@ -6,6 +6,7 @@ import astropy.units as u
 from scipy.interpolate import interp1d
 from scipy.integrate import quad,quad_vec
 from scipy.optimize import fsolve,root_scalar
+from scipy.optimize import brentq
 from . import PowerSpectrum as ps
 
 
@@ -123,9 +124,69 @@ class Barrier:
         del1 = cosmo.deltac(z) - deltaL
         return cosmo.rhom * (1 + deltar) / M / np.sqrt(2 * np.pi) * abs(self.powspec.dsigma2_dm_interp(M)) * del1 / (sig1**(3 / 2)) * np.exp(-del1 ** 2 / (2 * sig1))
 
-    # def dEPS_dz(self, M, Mr, deltar, z):
-    #     return (self.dndmeps(M,Mr,deltar,z+z*0.001) - self.dndmeps(M,Mr,deltar,z-z*0.001)) / (2*z*0.001)
     
+    def dEPS_dz(self,M,Mv,deltar,z):
+        return (self.dndmeps(M,Mv,deltar,z+0.001*z) - self.dndmeps(M,Mv,deltar,z-0.001*z)) / (0.002*z)
+
+    def dNxi_dz(self,m,deltaR,Mv,z):
+        return self.Xim(m,z)*m*self.dEPS_dz(m,Mv,deltaR,z)/ m_H * omega_b / omega_m
+
+    def Nxi_dz(self,deltaR,Mv,z):
+        Mj = cosmo.M_J(z)
+        Mmax = cosmo.M_vir(0.61,1e4,z)
+        if self.dEPS_dz(Mj,Mv,deltaR,z)>0 and self.dEPS_dz(Mmax,Mv,deltaR,z)>0:
+            return 0
+        if self.dEPS_dz(Mj,Mv,deltaR,z)<0 and self.dEPS_dz(Mmax,Mv,deltaR,z)<0:
+            M = np.logspace(np.log10(Mj),np.log10(Mmax),12)
+            ans = 0 
+            for i in range(len(M)-1):
+                ans += quad_vec(self.dNxi_dz,M[i],M[i+1],args=(deltaR,Mv,z))[0]
+            return ans
+        if self.dEPS_dz(Mj,Mv,deltaR,z)>0 and self.dEPS_dz(Mmax,Mv,deltaR,z)<0:
+            Log_Mmin = brentq(lambda logM:self.dEPS_dz(10**logM,Mv,deltaR,z), np.log10(Mj), np.log10(Mmax),xtol=0.05)
+            M = np.logspace(Log_Mmin,np.log10(Mmax),12)
+            ans = 0
+            for i in range(len(M)-1):
+                ans += quad_vec(self.dNxi_dz,M[i],M[i+1],args=(deltaR,Mv,z))[0]
+            return ans
+
+    def Nxi_dz_interp(self, deltaR, Mv, z):
+        try:
+            Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
+        except FileNotFoundError:
+            os.makedirs(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}', exist_ok=True)
+            delta_R = np.linspace(-0.999,2,100)
+            nxi_pure = np.array([self.Nxi_dz(dr,Mv,z) for dr in delta_R])
+            np.save(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', nxi_pure)
+            Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
+        Nxi_interp_Mv = interp1d(delta_R, Nxi_arr, kind='cubic')
+        return Nxi_interp_Mv(deltaR)
+
+    def dST_dz(self,m,z):
+        return (self.powspec.dndmst(m,z+0.001*z) - self.powspec.dndmst(m,z-0.001*z)) / (0.002*z)
+
+    def dNxi_dz_ST(self,m,z):
+        return self.Xim(m,z)*m*self.dST_dz(m,z)/ m_H * omega_b / omega_m
+
+    def Nxi_dz_ST(self,z):
+        Mj = cosmo.M_J(z)
+        Mmax = cosmo.M_vir(0.61,1e4,z)
+        if self.dST_dz(Mj,z)>0 and self.dST_dz(Mmax,z)>0:
+            return 0
+        if self.dST_dz(Mj,z)<0 and self.dST_dz(Mmax,z)<0:
+            M = np.logspace(np.log10(Mj),np.log10(Mmax),12)
+            ans = 0
+            for i in range(len(M)-1):
+                ans += quad_vec(self.dNxi_dz_ST,M[i],M[i+1],args=(z))[0]
+            return ans
+        if self.dST_dz(Mj,z)>0 and self.dST_dz(Mmax,z)<0:
+            Mmin = brentq(self.dST_dz, Mj, Mmax, args=(z))
+            M = np.logspace(np.log10(Mmin),np.log10(Mmax),12)
+            ans = 0
+            for i in range(len(M)-1):
+                ans += quad_vec(self.dNxi_dz_ST,M[i],M[i+1],args=(z))[0]
+            return ans
+
     # def Nxi_Add_Pure(self,Mv,deltaR):
     #     def Nxi_Pure_diff(m,Mv,deltaR):
     #         return self.Xim(m,self.z)*m*self.dEPS_dz(m,Mv,deltaR,self.z)/ m_H * omega_b / omega_m
