@@ -136,26 +136,27 @@ class Barrier:
         Mmax = cosmo.M_vir(0.61,1e4,z)
         if self.dEPS_dz(Mj,Mv,deltaR,z)>0 and self.dEPS_dz(Mmax,Mv,deltaR,z)>0:
             return 0
-        if self.dEPS_dz(Mj,Mv,deltaR,z)<0 and self.dEPS_dz(Mmax,Mv,deltaR,z)<0:
+        elif self.dEPS_dz(Mj,Mv,deltaR,z)<0 and self.dEPS_dz(Mmax,Mv,deltaR,z)<0:
             M = np.logspace(np.log10(Mj),np.log10(Mmax),12)
             ans = 0 
             for i in range(len(M)-1):
                 ans += quad_vec(self.dNxi_dz,M[i],M[i+1],args=(deltaR,Mv,z))[0]
             return ans
-        if self.dEPS_dz(Mj,Mv,deltaR,z)>0 and self.dEPS_dz(Mmax,Mv,deltaR,z)<0:
+        elif self.dEPS_dz(Mj,Mv,deltaR,z)>0 and self.dEPS_dz(Mmax,Mv,deltaR,z)<0:
             Log_Mmin = brentq(lambda logM:self.dEPS_dz(10**logM,Mv,deltaR,z), np.log10(Mj), np.log10(Mmax),xtol=0.05)
             M = np.logspace(Log_Mmin,np.log10(Mmax),12)
             ans = 0
             for i in range(len(M)-1):
                 ans += quad_vec(self.dNxi_dz,M[i],M[i+1],args=(deltaR,Mv,z))[0]
             return ans
-
+        else:
+            return 0
     def Nxi_dz_interp(self, deltaR, Mv, z):
         try:
             Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
         except FileNotFoundError:
             os.makedirs(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}', exist_ok=True)
-            delta_R = np.linspace(-0.98,2,100)
+            delta_R = np.linspace(-0.95,2,100)
             nxi_pure = np.array([self.Nxi_dz(dr,Mv,z) for dr in delta_R])
             np.save(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', nxi_pure)
             Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
