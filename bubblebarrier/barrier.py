@@ -7,6 +7,7 @@ from scipy.interpolate import interp1d
 from scipy.integrate import quad,quad_vec
 from scipy.optimize import fsolve,root_scalar
 from scipy.optimize import brentq
+from scipy.integrate import simpson
 from . import PowerSpectrum as ps
 
 
@@ -26,10 +27,9 @@ class Barrier:
         self.z = z_v
         self.M_min = cosmo.M_vir(0.61,1e4,self.z)  # Minimum halo mass for ionization
         self.powspec = ps.MassFunctions(A2byA1=A2byA1,kMpc_trans=kMpc_trans,alpha=alpha,beta=beta)
-        self.deltaR_interp = np.concatenate((np.linspace(-0.999,2,1000), np.linspace(2.001,25,1000)))
+        self.deltaR_interp = np.linspace(-0.999,2,1000)
         self.Nion_normal_ratio = self.Nion_ST()*self.fesc*self.qion
         self.M_J = self.powspec.M_Jeans(self.z)
-        self.delta_R = np.linspace(-0.95,2,100)
         # self.Nxi_normal_ratio = self.Nxi_ST()
 
     def Nion_Pure(self,Mv,deltaR):
@@ -152,6 +152,26 @@ class Barrier:
             return ans
         else:
             return 0
+    
+    def Simpson_Nxi_dz(self,delta_R:np.ndarray,M_v:float,z:float) -> np.ndarray:
+        try:
+            Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{M_v:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
+        except FileNotFoundError:
+            os.makedirs(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}', exist_ok=True)
+            M_min = self.M_J
+            M_max = self.M_min
+            Mh_interp = np.linspace(np.log10(M_min), np.log10(M_max), 1000)  # log10(M)
+            deltaR_grid, m_grid = np.meshgrid(self.deltaR_interp, Mh_interp, indexing='ij')
+            mh = self.dNxi_dz(m=10**m_grid, deltaR=deltaR_grid, Mv=M_v, z=z)
+            mh[mh > 0] = 0
+            integrand = mh * 10**m_grid * np.log(10)  # dN/dlogM -> dN/dM
+            # Integrate using Simpson's rule
+            Nxi_arr_save = simpson(integrand, x=Mh_interp, axis=1)
+            np.save(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{M_v:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy', Nxi_arr_save)
+            Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{M_v:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
+        Simpson_Interp = interp1d(self.deltaR_interp, Nxi_arr, kind='cubic')
+        return Simpson_Interp(delta_R)
+    
     def Nxi_dz_interp(self, deltaR, Mv, z):
         try:
             Nxi_arr = np.load(f'.Nxi_dz_Interp_init/NxiAtz{self.z:.2f}/Nxi_arr_Mv_{Mv:.3f}at_z={self.z:.2f}_A{self.A2byA1}_k{self.kMpc_trans}_alpha{self.alpha}_beta{self.beta}.npy')
