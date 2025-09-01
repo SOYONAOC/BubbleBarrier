@@ -30,6 +30,7 @@ class Barrier:
         self.deltaR_interp = np.linspace(-0.999,2,1000)
         self.Nion_normal_ratio = self.Nion_ST()*self.fesc*self.qion
         self.M_J = self.powspec.M_Jeans(self.z)
+        self.delta_R = np.linspace(-0.95,2,100)
         # self.Nxi_normal_ratio = self.Nxi_ST()
 
     def Nion_Pure(self,Mv,deltaR):
